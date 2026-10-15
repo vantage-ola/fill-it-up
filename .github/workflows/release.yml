@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test Rust crate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --locked
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x64
+            binary: fill-it-up
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            platform: darwin-x64
+            binary: fill-it-up
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            platform: darwin-arm64
+            binary: fill-it-up
+          - runner: windows-2022
+            target: x86_64-pc-windows-msvc
+            platform: win32-x64
+            binary: fill-it-up.exe
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cargo test --locked --target ${{ matrix.target }}
+      - run: cargo build --locked --release --target ${{ matrix.target }}
+      - name: Test packed npm package with the release binary
+        run: npm --prefix npm run test:package -- "target/${{ matrix.target }}/release/${{ matrix.binary }}"
+      - name: Stage native binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "dist/${{ matrix.platform }}"
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "dist/${{ matrix.platform }}/${{ matrix.binary }}"
+          if [[ "${{ runner.os }}" != "Windows" ]]; then
+            chmod +x "dist/${{ matrix.platform }}/${{ matrix.binary }}"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: dist
+
+  release:
+    name: Create release and npm package
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: npm/dist
+          merge-multiple: true
+      - name: Archive native binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          for directory in npm/dist/*; do
+            platform="$(basename "$directory")"
+            if [[ "$platform" != win32-* ]]; then
+              chmod +x "$directory/fill-it-up"
+            fi
+            cp LICENSE "$directory/LICENSE"
+            tar -czf "fill-it-up-${GITHUB_REF_NAME}-${platform}.tar.gz" -C npm/dist "$platform"
+          done
+          sha256sum fill-it-up-*.tar.gz > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            fill-it-up-*.tar.gz
+            SHA256SUMS
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Publish npm package
+        if: env.NPM_TOKEN != ''
+        working-directory: npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

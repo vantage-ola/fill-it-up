@@ -1,0 +1,22 @@
+[package]
+name = "fill-it-up"
+version = "0.1.0"
+edition = "2024"
+description = "Plan and create local commits for selected empty GitHub contribution days"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/vantage-ola/fill-it-up"
+keywords = ["github", "git", "cli", "contributions"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+rand = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+
+[[bin]]
+name = "fill-it-up"
+path = "src/main.rs"
