@@ -1,6 +1,6 @@
 [package]
 name = "fill-it-up"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Plan and create local commits for selected empty GitHub contribution days"
 license = "MIT"

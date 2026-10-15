@@ -68,4 +68,10 @@ npm --prefix npm run test:package
 
 The npm check packs the native binary and installs it locally, into a temporary global prefix, and through the npm exec entry point used by `npx`. It runs a full plan/apply/reapply flow with paths containing spaces. All test repositories, installations, and npm caches stay in temporary directories. To test a release build, pass its path after `--`.
 
-The npm package will be published as `@vantage-ola/fill-it-up` with the `fill-it-up` command. The release workflow bundles the supported native binaries, so npm users do not need Rust installed.
+The npm package will be published as `@oosanya/fill-it-up` with the `fill-it-up` command. The release workflow bundles the supported native binaries, so npm users do not need Rust installed. Once published, run it with:
+
+```bash
+npx @oosanya/fill-it-up --help
+```
+
+For maintainers, automated npm publishing requires a repository Actions secret named `NPM_TOKEN` with npm publishing access. If it is missing, the workflow publishes the native release and reports that npm publishing was skipped. Keep the Cargo and npm versions in sync when creating a release tag.

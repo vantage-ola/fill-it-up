@@ -108,3 +108,6 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Report skipped npm publishing
+        if: env.NPM_TOKEN == ''
+        run: echo "::warning::Npm publishing was skipped because the NPM_TOKEN repository secret is missing. Native release archives are available."

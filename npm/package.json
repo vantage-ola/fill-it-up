@@ -1,6 +1,6 @@
 {
-  "name": "@vantage-ola/fill-it-up",
-  "version": "0.1.0",
+  "name": "@oosanya/fill-it-up",
+  "version": "0.1.1",
   "description": "Plan and create local Git commits for selected contribution days",
   "license": "MIT",
   "bin": {

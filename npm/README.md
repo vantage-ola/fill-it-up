@@ -1,4 +1,23 @@
-# npm distribution
+# @oosanya/fill-it-up
+
+Plan and create local Git commits for selected empty contribution days. This package bundles the Rust CLI for macOS ARM64/x64, Linux x64, and Windows x64. Git and Node.js 18 or newer are required. GitHub profile planning also requires the GitHub CLI (`gh`) with an authenticated account.
+
+After the package is published:
+
+```bash
+npx @oosanya/fill-it-up --help
+```
+
+Or install the command globally:
+
+```bash
+npm install -g @oosanya/fill-it-up
+fill-it-up --help
+```
+
+See the [project README](https://github.com/vantage-ola/fill-it-up#readme) for planning, previewing, applying, and publishing commits.
+
+## Development
 
 This package is the Node entry point for the Rust `fill-it-up` binary. Release automation places the matching native binary in `dist/<platform>-<architecture>/` before publishing the package.
 
