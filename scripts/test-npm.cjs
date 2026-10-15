@@ -90,15 +90,26 @@ try {
 
   const prefix = path.join(temporary, "global prefix");
   npm(["install", "--global", "--prefix", prefix, "--ignore-scripts", archive]);
-  if (process.platform === "win32") {
-    // Invoke the generated Windows command shim using npm's script runner.
-    fs.writeFileSync(path.join(fresh, "package.json"), JSON.stringify({
-      private: true, scripts: { check: '"' + path.join(prefix, "fill-it-up.cmd") + '" --version' },
-    }));
-    assert.equal(npm(["run", "--silent", "check"], { cwd: fresh }).stdout.trim(), expectedVersion);
-  } else {
+  const globalBin = process.platform === "win32" ? prefix : path.join(prefix, "bin");
+  const globalCommand = process.platform === "win32" ? "fill-it-up.cmd" : "fill-it-up";
+  assert.ok(fs.existsSync(path.join(globalBin, globalCommand)));
+  if (process.platform !== "win32") {
     assert.equal(run(path.join(prefix, "bin", "fill-it-up"), ["--version"]).stdout.trim(), expectedVersion);
   }
+  // Resolve the real global shim through PATH. An absolute quoted command is
+  // parsed again by Windows cmd.exe and can lose quotes when the prefix has spaces.
+  // Exercise the same lookup on every OS, including failure-code forwarding.
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === "path") || "PATH";
+  const globalEnv = { ...env, [pathKey]: globalBin + path.delimiter + (env[pathKey] || "") };
+  fs.writeFileSync(path.join(fresh, "package.json"), JSON.stringify({
+    private: true, scripts: {
+      check: "fill-it-up --version",
+      "check-error": "fill-it-up --not-a-real-option",
+    },
+  }));
+  assert.equal(npm(["run", "--silent", "check"], { cwd: fresh, env: globalEnv })
+    .stdout.trim(), expectedVersion);
+  npm(["run", "--silent", "check-error"], { cwd: fresh, env: globalEnv, status: 2 });
 
   const repository = path.join(temporary, "contribution repo with spaces");
   const planPath = path.join(temporary, "saved plan.json");
